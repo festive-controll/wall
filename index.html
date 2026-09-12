@@ -458,6 +458,54 @@
     .totals-table td:last-child { border-radius: 0 12px 12px 0; color: var(--magenta); font-size: 18px; }
     .team-swatch { width: 10px; height: 10px; display: inline-block; margin-right: 10px; border-radius: 50%; }
 
+    /* Alternating textual entrances used only by the Total Points screen. */
+    .totals-enter-left,
+    .totals-enter-right {
+      opacity: 0;
+      animation-duration: 700ms;
+      animation-timing-function: cubic-bezier(.22, 1, .36, 1);
+      animation-fill-mode: both;
+      will-change: transform, opacity;
+    }
+    .totals-board > .result-kicker.totals-enter-left,
+    .totals-board > .result-kicker.totals-enter-right { display: inline-block; }
+    .totals-enter-left { animation-name: totals-text-from-left; }
+    .totals-enter-right { animation-name: totals-text-from-right; }
+    .totals-table tr.totals-enter-left,
+    .totals-table tr.totals-enter-right { display: table-row; }
+    .totals-group-animation { animation-duration: 10s; }
+
+    @keyframes totals-text-from-left {
+      from { opacity: 0; transform: translateX(-72px); filter: blur(3px); }
+      to { opacity: 1; transform: translateX(0); filter: blur(0); }
+    }
+    @keyframes totals-text-from-right {
+      from { opacity: 0; transform: translateX(72px); filter: blur(3px); }
+      to { opacity: 1; transform: translateX(0); filter: blur(0); }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .totals-enter-left,
+      .totals-enter-right { opacity: 1; animation: none; transform: none; filter: none; }
+    }
+
+    .launch-gate { position:fixed; inset:0; z-index:999999; display:flex; align-items:center; justify-content:center; overflow:hidden; padding:24px; background:radial-gradient(circle at 18% 20%,rgba(192,145,43,.18),transparent 26%),radial-gradient(circle at 84% 78%,rgba(146,32,93,.14),transparent 30%),#fff; color:#37314F; text-align:center; }
+    .launch-gate::before,.launch-gate::after { content:''; position:absolute; width:38vw; aspect-ratio:1; border:1px solid rgba(192,145,43,.2); border-radius:50%; }
+    .launch-gate::before { left:-19vw; top:-19vw; box-shadow:0 0 0 45px rgba(192,145,43,.035),0 0 0 90px rgba(146,32,93,.025); }
+    .launch-gate::after { right:-20vw; bottom:-20vw; box-shadow:0 0 0 55px rgba(23,99,95,.035); }
+    .launch-gate-card { position:relative; z-index:1; width:min(620px,92vw); padding:clamp(32px,5vw,58px); border:1px solid rgba(55,49,79,.1); border-radius:36px; background:rgba(255,255,255,.82); box-shadow:0 30px 80px rgba(55,49,79,.12); backdrop-filter:blur(18px); }
+    .launch-logo-wrap { position:relative; width:clamp(96px,11vw,142px); height:clamp(96px,11vw,142px); margin:0 auto 22px; display:grid; place-items:center; }
+    .launch-logo-wrap::before,.launch-logo-wrap::after { content:''; position:absolute; inset:0; border-radius:34px; border:2px solid rgba(192,145,43,.38); animation:launch-ring 2.4s ease-in-out infinite; }
+    .launch-logo-wrap::after { inset:-10px; border-color:rgba(146,32,93,.18); animation-delay:-1.2s; }
+    .launch-logo { width:76%; height:76%; object-fit:contain; border-radius:24px; filter:drop-shadow(0 12px 18px rgba(55,49,79,.12)); }
+    .launch-eyebrow { color:#C0912B; font-size:10px; font-weight:900; letter-spacing:.24em; text-transform:uppercase; }
+    .launch-name { margin:8px 0 18px; font-size:clamp(22px,3vw,38px); font-weight:900; letter-spacing:-.035em; }
+    .launch-countdown { display:none; font-size:clamp(100px,18vw,220px); font-weight:900; line-height:.88; color:#92205D; text-shadow:0 10px 35px rgba(146,32,93,.18); animation:launch-number 1s ease-in-out infinite; }
+    .launch-message { margin:0; font-size:clamp(24px,4vw,48px); font-weight:850; letter-spacing:-.035em; }
+    .launch-accent { width:92px; height:5px; margin:22px auto 0; border-radius:99px; background:linear-gradient(90deg,#92205D 0 33%,#C0912B 33% 66%,#17635F 66%); }
+    @keyframes launch-ring { 0%,100%{transform:scale(.96);opacity:.45}50%{transform:scale(1.05);opacity:1} }
+    @keyframes launch-number { 0%{transform:scale(.82);opacity:.35}35%,75%{transform:scale(1);opacity:1}100%{transform:scale(1.06);opacity:0} }
+
     .side-panel {
       height: calc(100vh - 150px);
       min-height: 0;
@@ -600,6 +648,16 @@
 </head>
 
 <body class="p-4 md:p-7">
+  <div id="launch-gate" class="launch-gate">
+    <div class="launch-gate-card">
+      <div class="launch-logo-wrap"><img id="launch-festival-logo" class="launch-logo" src="../logo-512.svg" alt="Festival logo"></div>
+      <div class="launch-eyebrow">Live festival screen</div>
+      <div id="launch-festival-name" class="launch-name">Festival</div>
+      <div id="launch-countdown" class="launch-countdown">5</div>
+      <h1 id="launch-message" class="launch-message">Website didnt launched</h1>
+      <div class="launch-accent"></div>
+    </div>
+  </div>
   <!-- Header -->
   <header class="screen-header max-w-[1600px] mx-auto flex items-center justify-between gap-5 mb-6">
 
@@ -725,6 +783,44 @@
     let visiblePrograms = [];
     let activeResultIndex = 0;
     let rotationTimer = null;
+    let launchCountdownTimer = null;
+
+    function updateLaunchGate(state) {
+      const gate = document.getElementById('launch-gate');
+      const countdown = document.getElementById('launch-countdown');
+      const message = document.getElementById('launch-message');
+      clearInterval(launchCountdownTimer);
+
+      if (state.launchState === 'countdown' && state.launchAt) {
+        gate.style.display = 'flex';
+        countdown.style.display = 'block';
+        message.style.display = 'none';
+        const launchAtMs = typeof state.launchAt.toMillis === 'function'
+          ? state.launchAt.toMillis()
+          : Number(state.launchAt);
+        const tick = () => {
+          const remaining = Math.max(0, Math.ceil((launchAtMs - Date.now()) / 1000));
+          countdown.textContent = remaining;
+          if (remaining <= 0) {
+            clearInterval(launchCountdownTimer);
+            gate.style.display = 'none';
+          }
+        };
+        tick();
+        launchCountdownTimer = setInterval(tick, 200);
+        return;
+      }
+
+      if (state.launchState === 'launched') {
+        gate.style.display = 'none';
+        return;
+      }
+
+      gate.style.display = 'flex';
+      countdown.style.display = 'none';
+      message.style.display = 'block';
+      message.textContent = 'Website didnt launched';
+    }
 
     async function enterFullscreen() {
       if (document.fullscreenElement || !document.documentElement.requestFullscreen) return true;
@@ -789,6 +885,15 @@
         .filter(result => result.programId === program.id || (result.programCode && result.programCode === program.code))
         .flatMap(result => [timestampValue(result.updatedAt), timestampValue(result.createdAt)]);
       return Math.max(0, ...programTimes, ...resultTimes);
+    }
+
+    function shufflePrograms(programs) {
+      const shuffled = [...programs];
+      for (let index = shuffled.length - 1; index > 0; index -= 1) {
+        const randomIndex = Math.floor(Math.random() * (index + 1));
+        [shuffled[index], shuffled[randomIndex]] = [shuffled[randomIndex], shuffled[index]];
+      }
+      return shuffled;
     }
 
     function isPublished(program) {
@@ -966,7 +1071,7 @@
 
       const categoryHeaders = sections.map(section => `<th>${escapeHtml(section)}</th>`).join('');
       const rows = rankings.map((team, index) => `<tr><td>${index + 1}</td><td><span class="team-swatch" style="background:${escapeHtml(team.color)}"></span>${escapeHtml(team.name)}</td>${sections.map(section => `<td>${team.sections[section]}</td>`).join('')}<td>${team.total}</td></tr>`).join('');
-      container.innerHTML = `<div class="totals-board"><span class="result-kicker">Live team standings</span><h2 class="text-3xl font-black mt-2">Total points</h2><table class="totals-table"><thead><tr><th>Rank</th><th>Team</th>${categoryHeaders}<th>Total</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+      container.innerHTML = `<div class="totals-board"><div class="totals-enter-left totals-group-animation"><span class="result-kicker">Live team standings</span><h2 class="text-3xl font-black mt-2">Total points</h2></div><table class="totals-table totals-enter-right totals-group-animation"><thead><tr><th>Rank</th><th>Team</th>${categoryHeaders}<th>Total</th></tr></thead><tbody>${rows}</tbody></table></div>`;
     }
 
     function renderRecentResults() {
@@ -1025,9 +1130,9 @@
       const publishedPrograms = allPrograms.filter(isPublished);
       let declared = publishedPrograms.length;
       const selectedCategory = document.getElementById('category-select').value;
-      visiblePrograms = publishedPrograms
-        .filter(program => getVenueCategory(program) === selectedCategory)
-        .sort((a, b) => getProgramLastUpdated(b) - getProgramLastUpdated(a));
+      visiblePrograms = shufflePrograms(
+        publishedPrograms.filter(program => getVenueCategory(program) === selectedCategory)
+      );
 
       // Update DOM
       document.getElementById('results-total').textContent = total;
@@ -1078,6 +1183,7 @@
         db.collection('config').doc('liveScreenController').onSnapshot(doc => {
         if (!doc.exists) return;
         const state = doc.data() || {};
+        updateLaunchGate(state);
         if (!['result', 'gallery'].includes(state.mode)) return;
         const modeSelect = document.getElementById('screen-mode-select');
         modeSelect.value = state.mode;
@@ -1097,8 +1203,10 @@
             const name = fest.name || 'Festival';
             const logo = fest.logo || fest.logo512 || fest.logo502 || fest.logo192;
             document.getElementById('festival-name').textContent = name;
+            document.getElementById('launch-festival-name').textContent = name;
             if (logo) {
               document.getElementById('festival-logo').src = logo;
+              document.getElementById('launch-festival-logo').src = logo;
               const favicon = document.getElementById('festival-favicon');
               if (favicon) favicon.href = logo;
             }
