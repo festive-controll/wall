@@ -431,11 +431,19 @@
     }
 
     .side-panel {
-      min-height: calc(100vh - 150px);
+      height: calc(100vh - 150px);
+      min-height: 0;
+      overflow: hidden;
       background: #fff;
       border: 1px solid rgba(55, 49, 79, .12);
       border-radius: 24px;
       box-shadow: 0 18px 45px rgba(55, 49, 79, .07);
+    }
+
+    #recent-results {
+      min-height: 0;
+      overscroll-behavior: contain;
+      scrollbar-gutter: stable;
     }
 
     .progress-track {
@@ -495,9 +503,12 @@
         grid-template-columns: 1fr !important;
       }
 
-      .main-card,
-      .side-panel {
+      .main-card {
         min-height: auto;
+      }
+
+      .side-panel {
+        height: clamp(420px, 68vh, 680px);
       }
 
       .featured-layout {
@@ -546,15 +557,11 @@
       }
     }
 
-    #fullscreen-prompt { position:fixed; inset:auto 18px 18px auto; z-index:1000; display:none; align-items:center; gap:8px; padding:10px 14px; border:1px solid rgba(55,49,79,.14); border-radius:999px; background:#37314F; color:#fff; box-shadow:0 12px 32px rgba(55,49,79,.2); font-size:11px; font-weight:800; cursor:pointer; }
-    #fullscreen-prompt.show { display:flex; }
     :fullscreen body { padding:20px !important; }
   </style>
 </head>
 
 <body class="p-4 md:p-7">
-  <button id="fullscreen-prompt" type="button"><span class="iconify" data-icon="solar:maximize-square-3-bold-duotone"></span>Tap to enter fullscreen</button>
-
   <!-- Header -->
   <header class="screen-header max-w-[1600px] mx-auto flex items-center justify-between gap-5 mb-6">
 
@@ -690,16 +697,28 @@
     }
 
     async function initializeFullscreen() {
-      const prompt = document.getElementById('fullscreen-prompt');
       const opened = await enterFullscreen();
-      prompt.classList.toggle('show', !opened && !document.fullscreenElement);
+      if (!opened) armFullscreenOnInteraction();
     }
 
-    document.getElementById('fullscreen-prompt').addEventListener('click', async () => {
-      if (await enterFullscreen()) document.getElementById('fullscreen-prompt').classList.remove('show');
-    });
+    let fullscreenInteractionArmed = false;
+
+    async function enterFullscreenFromInteraction() {
+      document.removeEventListener('pointerdown', enterFullscreenFromInteraction, true);
+      document.removeEventListener('keydown', enterFullscreenFromInteraction, true);
+      fullscreenInteractionArmed = false;
+      await enterFullscreen();
+    }
+
+    function armFullscreenOnInteraction() {
+      if (fullscreenInteractionArmed) return;
+      fullscreenInteractionArmed = true;
+      document.addEventListener('pointerdown', enterFullscreenFromInteraction, true);
+      document.addEventListener('keydown', enterFullscreenFromInteraction, true);
+    }
+
     document.addEventListener('fullscreenchange', () => {
-      document.getElementById('fullscreen-prompt').classList.toggle('show', !document.fullscreenElement);
+      if (!document.fullscreenElement) armFullscreenOnInteraction();
     });
     window.addEventListener('load', initializeFullscreen, { once: true });
 
@@ -844,13 +863,11 @@
     function restartRotation() {
       clearInterval(rotationTimer);
       const mode = document.getElementById('screen-mode-select').value;
-      const galleryAuto = mode === 'gallery' && document.getElementById('category-select').value === 'auto';
-      if (galleryAuto && visiblePrograms.length > 1) {
+      if (mode === 'gallery' && visiblePrograms.length > 1) {
         rotationTimer = setInterval(() => {
           activeResultIndex = (activeResultIndex + 1) % visiblePrograms.length;
-          if (mode === 'gallery') renderFeaturedGalleryItem();
-          else renderFeaturedResult();
-        }, 8000);
+          renderFeaturedGalleryItem();
+        }, 4000);
       }
     }
 
