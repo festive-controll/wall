@@ -501,7 +501,7 @@
     .launch-eyebrow { color:#C0912B; font-size:10px; font-weight:900; letter-spacing:.24em; text-transform:uppercase; }
     .launch-name { margin:8px 0 18px; font-size:clamp(22px,3vw,38px); font-weight:900; letter-spacing:-.035em; }
     .launch-countdown { display:none; font-size:clamp(100px,18vw,220px); font-weight:900; line-height:.88; color:#92205D; text-shadow:0 10px 35px rgba(146,32,93,.18); animation:launch-number 1s ease-in-out infinite; }
-    .launch-message { margin:0; font-size:clamp(24px,4vw,48px); font-weight:850; letter-spacing:-.035em; }
+    .launch-message { margin:0; font-size:clamp(17px,2.2vw,28px); font-weight:400; letter-spacing:0; }
     .launch-accent { width:92px; height:5px; margin:22px auto 0; border-radius:99px; background:linear-gradient(90deg,#92205D 0 33%,#C0912B 33% 66%,#17635F 66%); }
     @keyframes launch-ring { 0%,100%{transform:scale(.96);opacity:.45}50%{transform:scale(1.05);opacity:1} }
     @keyframes launch-number { 0%{transform:scale(.82);opacity:.35}35%,75%{transform:scale(1);opacity:1}100%{transform:scale(1.06);opacity:0} }
@@ -791,20 +791,22 @@
       const message = document.getElementById('launch-message');
       clearInterval(launchCountdownTimer);
 
-      if (state.launchState === 'countdown' && state.launchAt) {
+      if (state.launchState === 'countdown' && (state.launchAtMs || state.launchAt)) {
         gate.style.display = 'flex';
         countdown.style.display = 'block';
         message.style.display = 'none';
-        const launchAtMs = typeof state.launchAt.toMillis === 'function'
-          ? state.launchAt.toMillis()
-          : Number(state.launchAt);
+        const launchAtMs = Number(state.launchAtMs) ||
+          (state.launchAt && typeof state.launchAt.toMillis === 'function'
+            ? state.launchAt.toMillis()
+            : Number(state.launchAt));
         const tick = () => {
-          const remaining = Math.max(0, Math.ceil((launchAtMs - Date.now()) / 1000));
-          countdown.textContent = remaining;
-          if (remaining <= 0) {
+          const millisecondsLeft = launchAtMs - Date.now();
+          if (millisecondsLeft <= 0) {
             clearInterval(launchCountdownTimer);
             gate.style.display = 'none';
+            return;
           }
+          countdown.textContent = Math.max(1, Math.ceil(millisecondsLeft / 1000));
         };
         tick();
         launchCountdownTimer = setInterval(tick, 200);
