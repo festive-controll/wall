@@ -448,8 +448,8 @@
       font-weight: 900;
     }
 
-    .totals-board { width: 100%; height: calc(100vh - 150px); padding: clamp(24px, 4vw, 56px); position: relative; z-index: 1; overflow-y: auto; }
-    .totals-table { width: 100%; margin-top: 28px; border-collapse: separate; border-spacing: 0 10px; }
+    .totals-board { width: 100%; height: calc(100vh - 150px); padding: clamp(24px, 4vw, 56px); position: relative; z-index: 1; overflow: auto; }
+    .totals-table { width: 100%; min-width: max-content; margin-top: 28px; border-collapse: separate; border-spacing: 0 10px; }
     .totals-table th { padding: 0 18px 8px; color: #8d8795; font-size: 10px; text-align: right; text-transform: uppercase; }
     .totals-table th:nth-child(2) { text-align: left; }
     .totals-table td { padding: 16px 18px; background: #fff; text-align: right; font-weight: 800; }
@@ -720,6 +720,7 @@
     let allPrograms = [];
     let allResults = [];
     let allTeams = [];
+    let allSections = [];
     let allGalleryMedia = [];
     let visiblePrograms = [];
     let activeResultIndex = 0;
@@ -920,15 +921,15 @@
     }
 
     function renderTeamTotals() {
-      const sections = ['Bidya', 'Ula', 'Thaniya'];
+      const databaseSections = allSections.map(section => String(section.name || '').trim()).filter(Boolean);
+      const programSections = allPrograms.map(program => String(program.section || program.category || '').trim()).filter(Boolean);
+      const sections = [...new Map([...databaseSections, ...programSections].map(name => [name.toLowerCase(), name])).values()];
       const publishedIds = new Set(allPrograms.filter(isPublished).map(program => program.id));
       const programMap = new Map(allPrograms.map(program => [program.id, program]));
       const teamMap = new Map(allTeams.map(team => [team.name, {
         name: team.name,
         color: team.color || '#C0912B',
-        Bidya: 0,
-        Ula: 0,
-        Thaniya: 0,
+        sections: Object.fromEntries(sections.map(section => [section, 0])),
         total: 0
       }]));
 
@@ -937,14 +938,15 @@
         const teamName = result.team || result.teamName;
         if (!teamName) return;
         if (!teamMap.has(teamName)) {
-          teamMap.set(teamName, { name: teamName, color: '#C0912B', Bidya: 0, Ula: 0, Thaniya: 0, total: 0 });
+          teamMap.set(teamName, { name: teamName, color: '#C0912B', sections: Object.fromEntries(sections.map(section => [section, 0])), total: 0 });
         }
         const team = teamMap.get(teamName);
         const program = programMap.get(result.programId) || {};
-        const programGroup = `${program.section || ''} ${program.category || ''} ${program.venueTypeName || ''} ${program.venueType || ''}`.toLowerCase();
+        const programGroups = [program.section, program.category, program.venueTypeName, program.venueType].filter(Boolean).map(value => String(value).trim().toLowerCase());
         const points = Number(result.totalPoints || result.points || result.score || 0);
-        const section = sections.find(name => programGroup.includes(name.toLowerCase()));
-        if (section) team[section] += points;
+        const section = sections.find(name => programGroups.includes(name.toLowerCase()))
+          || sections.find(name => programGroups.some(group => group.includes(name.toLowerCase())));
+        if (section) team.sections[section] += points;
         team.total += points;
       });
 
@@ -962,8 +964,9 @@
         return;
       }
 
-      const rows = rankings.map((team, index) => `<tr><td>${index + 1}</td><td><span class="team-swatch" style="background:${escapeHtml(team.color)}"></span>${escapeHtml(team.name)}</td><td>${team.Bidya}</td><td>${team.Ula}</td><td>${team.Thaniya}</td><td>${team.total}</td></tr>`).join('');
-      container.innerHTML = `<div class="totals-board"><span class="result-kicker">Live team standings</span><h2 class="text-3xl font-black mt-2">Total points</h2><table class="totals-table"><thead><tr><th>Rank</th><th>Team</th><th>Bidya</th><th>Ula</th><th>Thaniya</th><th>Total</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+      const categoryHeaders = sections.map(section => `<th>${escapeHtml(section)}</th>`).join('');
+      const rows = rankings.map((team, index) => `<tr><td>${index + 1}</td><td><span class="team-swatch" style="background:${escapeHtml(team.color)}"></span>${escapeHtml(team.name)}</td>${sections.map(section => `<td>${team.sections[section]}</td>`).join('')}<td>${team.total}</td></tr>`).join('');
+      container.innerHTML = `<div class="totals-board"><span class="result-kicker">Live team standings</span><h2 class="text-3xl font-black mt-2">Total points</h2><table class="totals-table"><thead><tr><th>Rank</th><th>Team</th>${categoryHeaders}<th>Total</th></tr></thead><tbody>${rows}</tbody></table></div>`;
     }
 
     function renderRecentResults() {
@@ -1062,6 +1065,10 @@
         allTeams = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         if (document.getElementById('screen-mode-select').value === 'result' && document.getElementById('category-select').value === 'total') processData();
       }, error => console.warn('Teams:', error));
+      db.collection('sections').onSnapshot(snap => {
+        allSections = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        if (document.getElementById('screen-mode-select').value === 'result' && document.getElementById('category-select').value === 'total') processData();
+      }, error => console.warn('Sections:', error));
 
       db.collection('mediaGallery').orderBy('createdAt', 'desc').onSnapshot(snap => {
         allGalleryMedia = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
