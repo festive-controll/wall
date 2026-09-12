@@ -144,6 +144,19 @@
       background: linear-gradient(180deg, #92205D, #C0912B, #17635F);
     }
 
+    .main-card > * {
+      animation: content-fade-in 350ms ease-out;
+    }
+
+    @keyframes content-fade-in {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .main-card > * { animation: none; }
+    }
+
     .result-kicker {
       color: #92205D;
       letter-spacing: .16em;
@@ -440,6 +453,16 @@
       box-shadow: 0 18px 45px rgba(55, 49, 79, .07);
     }
 
+    .screen-grid.gallery-mode,
+    .screen-grid.result-mode {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .screen-grid.gallery-mode .side-panel,
+    .screen-grid.result-mode .side-panel {
+      display: none;
+    }
+
     #recent-results {
       min-height: 0;
       overscroll-behavior: contain;
@@ -729,6 +752,28 @@
       return raw.includes('sport') ? 'sports' : 'arts';
     }
 
+    function timestampValue(value) {
+      if (!value) return 0;
+      if (typeof value.toMillis === 'function') return value.toMillis();
+      if (value instanceof Date) return value.getTime();
+      if (typeof value.seconds === 'number') return value.seconds * 1000;
+      const parsed = new Date(value).getTime();
+      return Number.isNaN(parsed) ? 0 : parsed;
+    }
+
+    function getProgramLastUpdated(program) {
+      const programTimes = [
+        program.resultsUpdatedAt,
+        program.updatedAt,
+        program.publishedAt,
+        program.createdAt
+      ].map(timestampValue);
+      const resultTimes = allResults
+        .filter(result => result.programId === program.id || (result.programCode && result.programCode === program.code))
+        .flatMap(result => [timestampValue(result.updatedAt), timestampValue(result.createdAt)]);
+      return Math.max(0, ...programTimes, ...resultTimes);
+    }
+
     function isPublished(program) {
       return program.isPublished === true || program.resultsPublished === true || String(program.status || '').toLowerCase() === 'published';
     }
@@ -790,6 +835,8 @@
     }
 
     function renderGalleryScreen() {
+      document.querySelector('.screen-grid').classList.remove('result-mode');
+      document.querySelector('.screen-grid').classList.add('gallery-mode');
       const filter = document.getElementById('category-select').value;
       visiblePrograms = allGalleryMedia.filter(media => {
         if (!media.url) return false;
@@ -818,13 +865,20 @@
       const reel = isReel(media);
       const rotated = reel && media.orientation === 'landscape';
       const mediaElement = reel
-        ? `<video src="${escapeHtml(media.url)}" class="gallery-media-backdrop" autoplay muted loop playsinline aria-hidden="true"></video><video src="${escapeHtml(media.url)}" class="gallery-feature-media ${rotated ? 'gallery-feature-media--rotated' : ''}" autoplay loop controls playsinline onloadedmetadata="prepareGalleryVideo(this, ${rotated})"></video>`
+        ? `<video src="${escapeHtml(media.url)}" class="gallery-media-backdrop" autoplay muted playsinline aria-hidden="true"></video><video src="${escapeHtml(media.url)}" class="gallery-feature-media ${rotated ? 'gallery-feature-media--rotated' : ''}" autoplay controls playsinline onloadedmetadata="prepareGalleryVideo(this, ${rotated})" onended="advanceGalleryItem()"></video>`
         : `<img src="${escapeHtml(media.url)}" class="gallery-media-backdrop" alt="" aria-hidden="true"><img src="${escapeHtml(media.url)}" alt="${escapeHtml(media.name || 'Gallery image')}" class="gallery-feature-media">`;
-      container.innerHTML = `<div class="gallery-feature"><div class="gallery-media-stage">${mediaElement}<div class="gallery-feature-shade"></div><span class="gallery-type-badge"><span class="iconify" data-icon="${reel ? 'solar:videocamera-record-bold' : 'solar:gallery-bold'}"></span>${reel ? 'Reel' : 'Image'}</span></div><div class="gallery-feature-caption"><span>${escapeHtml(media.albumName || 'Festival gallery')}</span><h2>${escapeHtml(media.name || (reel ? 'Festival Reel' : 'Festival Moment'))}</h2><p>Live from the festival media gallery</p></div></div>`;
+      container.innerHTML = `<div class="gallery-feature"><div class="gallery-media-stage">${mediaElement}<div class="gallery-feature-shade"></div><span class="gallery-type-badge"><span class="iconify" data-icon="${reel ? 'solar:videocamera-record-bold' : 'solar:gallery-bold'}"></span>${reel ? 'Reel' : 'Image'}</span></div><div class="gallery-feature-caption"><span>${escapeHtml(media.albumName || 'Festival gallery')}</span><p>Live from the festival media gallery</p></div></div>`;
       list.innerHTML = visiblePrograms.map((item, index) => `<button class="recent-item ${index === activeResultIndex ? 'active' : ''} w-full p-2.5 text-left flex items-center gap-3" onclick="showGalleryItem(${index})"><span class="gallery-thumb">${isReel(item) ? `<video src="${escapeHtml(item.url)}" muted preload="metadata"></video><i class="iconify" data-icon="solar:play-bold"></i>` : `<img src="${escapeHtml(item.url)}" alt="">`}</span><span class="min-w-0"><strong class="block text-xs text-[#37314F] truncate">${escapeHtml(item.name || (isReel(item) ? 'Festival Reel' : 'Festival Image'))}</strong><small class="block text-[10px] text-slate-400 mt-1 truncate">${escapeHtml(item.albumName || 'Gallery')}</small></span></button>`).join('');
     }
 
     window.showGalleryItem = function (index) { activeResultIndex = index; renderFeaturedGalleryItem(); restartRotation(); };
+
+    window.advanceGalleryItem = function () {
+      if (visiblePrograms.length < 2) return;
+      activeResultIndex = (activeResultIndex + 1) % visiblePrograms.length;
+      renderFeaturedGalleryItem();
+      restartRotation();
+    };
 
     function renderFeaturedResult() {
       const container = document.getElementById('main-results-card');
@@ -860,19 +914,28 @@
 
     window.showResult = function (index) { activeResultIndex = index; renderFeaturedResult(); restartRotation(); };
 
+    function advanceResult() {
+      if (visiblePrograms.length < 2) return;
+      activeResultIndex = (activeResultIndex + 1) % visiblePrograms.length;
+      renderFeaturedResult();
+      restartRotation();
+    }
+
     function restartRotation() {
-      clearInterval(rotationTimer);
+      clearTimeout(rotationTimer);
       const mode = document.getElementById('screen-mode-select').value;
-      if (mode === 'gallery' && visiblePrograms.length > 1) {
-        rotationTimer = setInterval(() => {
-          activeResultIndex = (activeResultIndex + 1) % visiblePrograms.length;
-          renderFeaturedGalleryItem();
-        }, 4000);
+      const currentMedia = visiblePrograms[activeResultIndex];
+      if (mode === 'gallery' && visiblePrograms.length > 1 && currentMedia && !isReel(currentMedia)) {
+        rotationTimer = setTimeout(advanceGalleryItem, 4000);
+      } else if (mode === 'result' && visiblePrograms.length > 1) {
+        rotationTimer = setTimeout(advanceResult, 5000);
       }
     }
 
     function processData() {
       if (!allPrograms) return;
+      document.querySelector('.screen-grid').classList.remove('gallery-mode');
+      document.querySelector('.screen-grid').classList.add('result-mode');
 
       // Merge the separate result documents into their program before the UI renders.
       allPrograms.forEach(program => {
@@ -891,7 +954,9 @@
       const publishedPrograms = allPrograms.filter(isPublished);
       let declared = publishedPrograms.length;
       const selectedCategory = document.getElementById('category-select').value;
-      visiblePrograms = publishedPrograms.filter(program => getVenueCategory(program) === selectedCategory).reverse();
+      visiblePrograms = publishedPrograms
+        .filter(program => getVenueCategory(program) === selectedCategory)
+        .sort((a, b) => getProgramLastUpdated(b) - getProgramLastUpdated(a));
 
       // Update DOM
       document.getElementById('results-total').textContent = total;
