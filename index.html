@@ -1,0 +1,951 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link id="festival-favicon" rel="icon" type="image/png" href="../favicon.ico">
+  <title>Screen — Festival</title>
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"
+    rel="stylesheet">
+
+  <!-- Iconify -->
+  <script src="https://code.iconify.design/3/3.1.0/iconify.min.js"></script>
+
+  <!-- Tailwind -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { sans: ['Cobe', 'Inter', 'sans-serif'] },
+          colors: {
+            brand: {
+              bg: '#f8f9fc',
+              primary: '#37314F',
+              gold: '#C0912B',
+              teal: '#17635F',
+              magenta: '#92205D'
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    :root {
+      --brand-bg: #f8f9fc;
+      --primary: #37314F;
+      --gold: #C0912B;
+      --teal: #17635F;
+      --magenta: #92205D;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      background: radial-gradient(circle at 95% 4%, rgba(146, 32, 93, .08), transparent 24%), var(--brand-bg);
+      color: var(--primary);
+      font-family: 'Cobe', 'Inter', sans-serif;
+      overflow-x: hidden;
+    }
+
+    .select-pill {
+      appearance: none;
+      background-color: white;
+      border: 1px solid rgba(55, 49, 79, .18);
+      border-radius: 9999px;
+      padding: 6px 36px 6px 36px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--primary);
+      cursor: pointer;
+      outline: none;
+      transition: all 0.2s;
+    }
+
+    .select-pill:hover,
+    .select-pill:focus {
+      border-color: var(--gold);
+      box-shadow: 0 0 0 3px rgba(192, 145, 43, .12);
+    }
+
+    .select-wrap {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+    }
+
+    .select-wrap .left-icon {
+      position: absolute;
+      left: 12px;
+      pointer-events: none;
+      color: var(--magenta);
+      font-size: 14px;
+    }
+
+    .select-wrap .right-icon {
+      position: absolute;
+      right: 12px;
+      pointer-events: none;
+      color: #94a3b8;
+      font-size: 14px;
+    }
+
+    .stat-card {
+      background: white;
+      border-radius: 12px;
+      padding: 10px 20px;
+      border: 1px solid rgba(55, 49, 79, .1);
+      box-shadow: 0 8px 24px rgba(55, 49, 79, .06);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .main-card {
+      background: linear-gradient(145deg, #ffffff 0%, #fcfaf5 62%, #f8f1f5 100%);
+      border: 1px solid rgba(55, 49, 79, .13);
+      border-radius: 24px;
+      min-height: calc(100vh - 150px);
+      box-shadow: 0 24px 60px rgba(55, 49, 79, .1);
+      display: flex;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .main-card::before {
+      content: '';
+      position: absolute;
+      width: 360px;
+      height: 360px;
+      border: 70px solid rgba(192, 145, 43, .1);
+      border-radius: 50%;
+      right: -150px;
+      top: -180px;
+    }
+
+    .main-card::after {
+      content: '';
+      position: absolute;
+      width: 7px;
+      height: 38%;
+      left: 0;
+      top: 31%;
+      border-radius: 0 8px 8px 0;
+      background: linear-gradient(180deg, #92205D, #C0912B, #17635F);
+    }
+
+    .result-kicker {
+      color: #92205D;
+      letter-spacing: .16em;
+      text-transform: uppercase;
+      font-size: 11px;
+      font-weight: 800;
+    }
+
+    .winner-card {
+      position: relative;
+      background: #fff;
+      border: 1px solid rgba(55, 49, 79, .1);
+      border-radius: 18px;
+      box-shadow: 0 10px 28px rgba(55, 49, 79, .07);
+      transition: transform .2s ease;
+    }
+
+    .winner-card:hover {
+      transform: translateY(-3px);
+    }
+
+    .winner-card.rank-1 {
+      background: linear-gradient(145deg, #fbf4e3, #fff);
+      border-color: rgba(192, 145, 43, .6);
+    }
+
+    .winner-card.rank-2 {
+      background: linear-gradient(145deg, #f3f1f6, #fff);
+    }
+
+    .winner-card.rank-3 {
+      background: linear-gradient(145deg, #eaf4f2, #fff);
+      border-color: rgba(23, 99, 95, .22);
+    }
+
+    .winner-avatar {
+      width: 48px;
+      height: 48px;
+      display: grid;
+      place-items: center;
+      border-radius: 15px;
+      color: #fff;
+      background: #37314F;
+      font-size: 14px;
+      font-weight: 900;
+      flex: none;
+    }
+
+    .rank-1 .winner-avatar {
+      background: #C0912B;
+      color: #37314F;
+    }
+
+    .rank-3 .winner-avatar {
+      background: #17635F;
+    }
+
+    .winner-position {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      color: rgba(55, 49, 79, .12);
+      font-size: 32px;
+      font-weight: 900;
+      line-height: 1;
+    }
+
+    .points-pill {
+      display: inline-flex;
+      align-items: center;
+      padding: 5px 9px;
+      border-radius: 999px;
+      color: #92205D;
+      background: #f7edf2;
+      font-size: 11px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .featured-layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1.05fr) minmax(330px, .95fr);
+      align-items: center;
+      gap: clamp(2rem, 5vw, 5rem);
+      width: 100%;
+    }
+
+    .program-title {
+      max-width: 760px;
+      font-size: clamp(2.6rem, 5vw, 5.4rem);
+      line-height: .94;
+      letter-spacing: -.055em;
+    }
+
+    .program-title::after {
+      content: '';
+      display: block;
+      width: 72px;
+      height: 5px;
+      margin-top: 1.4rem;
+      border-radius: 99px;
+      background: linear-gradient(90deg, #C0912B 0 34%, #92205D 34% 67%, #17635F 67%);
+    }
+
+    .podium-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .podium-label {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      color: #92205D;
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+    }
+
+    .podium-label::after {
+      content: '';
+      height: 1px;
+      flex: 1;
+      background: #e9e3eb;
+    }
+
+    .gallery-feature {
+      width: 100%;
+      height: calc(100vh - 150px);
+      min-height: 0;
+      padding: 12px;
+      display: grid;
+      grid-template-rows: minmax(0, 1fr) auto;
+      gap: 12px;
+      overflow: hidden;
+    }
+
+    .gallery-media-stage {
+      min-height: 0;
+      position: relative;
+      overflow: hidden;
+      isolation: isolate;
+      border-radius: 18px;
+      background: #292431;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .gallery-media-backdrop {
+      position: absolute;
+      inset: -28px;
+      z-index: -2;
+      width: calc(100% + 56px);
+      height: calc(100% + 56px);
+      object-fit: cover;
+      filter: blur(24px) saturate(.8);
+      opacity: .48;
+      transform: scale(1.06);
+    }
+
+    .gallery-media-stage::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      z-index: -1;
+      background: rgba(30, 25, 37, .2);
+      pointer-events: none;
+    }
+
+    .gallery-feature-media {
+      display: block;
+      width: auto;
+      height: auto;
+      max-width: 100%;
+      max-height: 100%;
+      position: relative;
+      z-index: 1;
+      object-fit: contain;
+      object-position: center;
+      box-shadow: 0 18px 55px rgba(16, 12, 22, .28);
+    }
+
+    .gallery-feature-media--rotated {
+      max-width: none;
+      max-height: none;
+      transform: rotate(-90deg);
+      transform-origin: center;
+    }
+
+    .gallery-feature-shade {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, transparent 58%, rgba(24, 19, 32, .44));
+      pointer-events: none;
+    }
+
+    .gallery-type-badge {
+      position: absolute;
+      top: 16px;
+      left: 16px;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      padding: 7px 11px;
+      color: #fff;
+      background: rgba(55, 49, 79, .78);
+      backdrop-filter: blur(10px);
+      border-radius: 999px;
+      font-size: 10px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: .1em;
+    }
+
+    .gallery-feature-caption {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: end;
+      gap: 4px 20px;
+      padding: 0 4px 4px;
+    }
+
+    .gallery-feature-caption span {
+      grid-column: 1;
+      color: #92205D;
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+    }
+
+    .gallery-feature-caption h2 {
+      grid-column: 1;
+      color: #37314F;
+      font-size: clamp(1.35rem, 2.6vw, 2.25rem);
+      font-weight: 900;
+      line-height: 1.05;
+    }
+
+    .gallery-feature-caption p {
+      grid-column: 2;
+      grid-row: 1 / span 2;
+      align-self: center;
+      color: #94a3b8;
+      font-size: 11px;
+    }
+
+    .gallery-thumb {
+      width: 48px;
+      height: 42px;
+      position: relative;
+      display: grid;
+      place-items: center;
+      flex: none;
+      overflow: hidden;
+      border-radius: 10px;
+      background: #eeeaf1;
+      color: #fff;
+    }
+
+    .gallery-thumb img,
+    .gallery-thumb video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .gallery-thumb .iconify {
+      position: absolute;
+      filter: drop-shadow(0 1px 3px rgba(0, 0, 0, .5));
+    }
+
+    .rank-medal {
+      width: 38px;
+      height: 38px;
+      display: grid;
+      place-items: center;
+      border-radius: 12px;
+      background: var(--gold);
+      color: var(--primary);
+      font-weight: 900;
+    }
+
+    .side-panel {
+      min-height: calc(100vh - 150px);
+      background: #fff;
+      border: 1px solid rgba(55, 49, 79, .12);
+      border-radius: 24px;
+      box-shadow: 0 18px 45px rgba(55, 49, 79, .07);
+    }
+
+    .progress-track {
+      height: 7px;
+      background: #eeeaf1;
+      border-radius: 999px;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--teal), var(--gold));
+      border-radius: inherit;
+      transition: width .5s ease;
+    }
+
+    .recent-item {
+      border: 1px solid #ebe8ef;
+      border-radius: 14px;
+      transition: .2s ease;
+    }
+
+    .recent-item:hover,
+    .recent-item.active {
+      border-color: var(--gold);
+      background: #faf7ef;
+      transform: translateY(-1px);
+    }
+
+    .empty-orb {
+      width: 76px;
+      height: 76px;
+      display: grid;
+      place-items: center;
+      margin: auto;
+      border-radius: 24px;
+      background: rgba(192, 145, 43, .16);
+      color: #dfc27d;
+      font-size: 34px;
+      transform: rotate(-5deg);
+    }
+
+    @media (max-width: 1023px) {
+      .screen-header {
+        flex-wrap: wrap;
+      }
+
+      .header-controls {
+        order: 3;
+        width: 100%;
+        justify-content: center;
+        position: static !important;
+        transform: none !important;
+      }
+
+      .screen-grid {
+        grid-template-columns: 1fr !important;
+      }
+
+      .main-card,
+      .side-panel {
+        min-height: auto;
+      }
+
+      .featured-layout {
+        grid-template-columns: 1fr;
+        gap: 2.5rem;
+      }
+
+      .gallery-feature {
+        height: auto;
+        min-height: 70vh;
+      }
+    }
+
+    @media (max-width: 640px) {
+      body {
+        padding: 1rem !important;
+      }
+
+      .screen-stats {
+        display: none !important;
+      }
+
+      .brand-subtitle {
+        display: none;
+      }
+
+      .select-pill {
+        width: 100%;
+      }
+
+      .select-wrap {
+        flex: 1;
+      }
+
+      .winner-grid {
+        grid-template-columns: 1fr !important;
+      }
+
+      .gallery-feature-caption {
+        grid-template-columns: 1fr;
+      }
+
+      .gallery-feature-caption p {
+        grid-column: 1;
+        grid-row: auto;
+      }
+    }
+
+    #fullscreen-prompt { position:fixed; inset:auto 18px 18px auto; z-index:1000; display:none; align-items:center; gap:8px; padding:10px 14px; border:1px solid rgba(55,49,79,.14); border-radius:999px; background:#37314F; color:#fff; box-shadow:0 12px 32px rgba(55,49,79,.2); font-size:11px; font-weight:800; cursor:pointer; }
+    #fullscreen-prompt.show { display:flex; }
+    :fullscreen body { padding:20px !important; }
+  </style>
+</head>
+
+<body class="p-4 md:p-7">
+  <button id="fullscreen-prompt" type="button"><span class="iconify" data-icon="solar:maximize-square-3-bold-duotone"></span>Tap to enter fullscreen</button>
+
+  <!-- Header -->
+  <header class="screen-header max-w-[1600px] mx-auto flex items-center justify-between gap-5 mb-6">
+
+    <!-- Left: Logo & Title -->
+    <div class="flex items-center gap-4">
+      <div class="flex items-center gap-2">
+        <span class="w-10 h-10 grid place-items-center">
+          <img id="festival-logo" src="../logo-192.svg" alt="Festival logo" class="w-full h-full object-contain">
+        </span>
+        <span id="festival-name" class="font-extrabold text-[#37314F] text-xl tracking-tight">Festival</span>
+      </div>
+      <div class="brand-subtitle h-8 w-px bg-slate-200"></div>
+      <div class="brand-subtitle">
+        <h1 class="text-sm font-black text-[#37314F] uppercase tracking-[.16em]">Screen</h1>
+        <p class="text-[10px] text-slate-400 font-semibold mt-0.5">Festival command screen</p>
+      </div>
+    </div>
+
+    <!-- Center: Dropdowns -->
+    <div class="header-controls flex items-center gap-3 absolute left-1/2 transform -translate-x-1/2">
+      <div class="select-wrap">
+        <span class="iconify left-icon" data-icon="solar:monitor-bold"></span>
+        <select class="select-pill" id="screen-mode-select">
+          <option value="result">Result</option>
+          <option value="gallery">Gallery</option>
+        </select>
+        <span class="iconify right-icon" data-icon="solar:alt-arrow-down-linear"></span>
+      </div>
+
+      <div class="select-wrap">
+        <span class="iconify left-icon" data-icon="solar:map-point-bold"></span>
+        <select class="select-pill" id="category-select">
+          <option value="arts">ARTS</option>
+          <option value="sports">SPORTS</option>
+        </select>
+        <span class="iconify right-icon" data-icon="solar:alt-arrow-down-linear"></span>
+      </div>
+    </div>
+
+    <!-- Right: Stats & Time -->
+    <div class="screen-stats flex items-center gap-3">
+      <div class="stat-card">
+        <div class="text-xl font-bold">
+          <span class="text-[#C0912B]" id="results-declared">0</span><span class="text-gray-300">/</span><span
+            class="text-[#37314F]" id="results-total">0</span>
+        </div>
+        <div id="stats-label" class="text-[10px] text-gray-400 font-semibold uppercase tracking-wider mt-0.5">published
+          results</div>
+      </div>
+
+      <div class="stat-card px-5">
+        <div class="text-xl font-bold text-[#37314F]" id="clock-time">--:-- --</div>
+        <div class="text-[10px] text-gray-400 font-semibold mt-0.5" id="clock-date">--, -- --</div>
+      </div>
+    </div>
+
+  </header>
+
+  <!-- Main Content -->
+  <main class="screen-grid max-w-[1600px] mx-auto grid grid-cols-[minmax(0,2fr)_minmax(320px,.72fr)] gap-5">
+    <section class="main-card" id="main-results-card"></section>
+    <aside class="side-panel p-5 flex flex-col">
+      <div class="flex items-center justify-between gap-3 mb-3">
+        <div><span class="text-[10px] font-extrabold tracking-[.14em] uppercase text-[#92205D]">Result feed</span>
+          <h2 class="text-lg font-extrabold text-[#37314F] mt-0.5">Recently declared</h2>
+        </div><span class="w-10 h-10 rounded-xl bg-[#f3edf1] text-[#92205D] grid place-items-center"><span
+            class="iconify text-xl" data-icon="solar:history-bold-duotone"></span></span>
+      </div>
+      <div class="progress-track mb-5">
+        <div class="progress-fill" id="results-progress" style="width:0%"></div>
+      </div>
+      <div id="recent-results" class="space-y-2.5 overflow-y-auto pr-1 flex-1"></div>
+    </aside>
+  </main>
+
+  <!-- Firebase & Logic -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+
+  <script>
+    // Clock update logic
+    function updateClock() {
+      const now = new Date();
+
+      // Time format: 6:13 PM
+      let hours = now.getHours();
+      const ampm = hours >= 12 ? 'PM' : 'AM';
+      hours = hours % 12;
+      hours = hours ? hours : 12;
+      const mins = now.getMinutes().toString().padStart(2, '0');
+      document.getElementById('clock-time').textContent = `${hours}:${mins} ${ampm}`;
+
+      // Date format: Saturday, August 15
+      const options = { weekday: 'long', month: 'long', day: 'numeric' };
+      document.getElementById('clock-date').textContent = now.toLocaleDateString('en-US', options);
+    }
+
+    setInterval(updateClock, 1000);
+    updateClock();
+
+    // Firebase Initialization (Preserved from previous implementation)
+    const FB_CONFIG = {
+      authDomain: "festie-s1u2h3.firebaseapp.com",
+      projectId: "festie-s1u2h3",
+      storageBucket: "festie-s1u2h3.firebasestorage.app",
+      messagingSenderId: "1055535560935",
+      appId: "1:1055535560935:web:5317ad5fe9ba3ffcfebff7"
+    };
+
+    let db = null;
+    try {
+      if (typeof firebase !== 'undefined') {
+        if (!firebase.apps.length) firebase.initializeApp(FB_CONFIG);
+        db = firebase.firestore();
+      }
+    } catch (e) { console.warn('Firebase:', e); }
+
+    let allPrograms = [];
+    let allResults = [];
+    let allGalleryMedia = [];
+    let visiblePrograms = [];
+    let activeResultIndex = 0;
+    let rotationTimer = null;
+
+    async function enterFullscreen() {
+      if (document.fullscreenElement || !document.documentElement.requestFullscreen) return true;
+      try {
+        await document.documentElement.requestFullscreen({ navigationUI: 'hide' });
+        return true;
+      } catch (error) {
+        return false;
+      }
+    }
+
+    async function initializeFullscreen() {
+      const prompt = document.getElementById('fullscreen-prompt');
+      const opened = await enterFullscreen();
+      prompt.classList.toggle('show', !opened && !document.fullscreenElement);
+    }
+
+    document.getElementById('fullscreen-prompt').addEventListener('click', async () => {
+      if (await enterFullscreen()) document.getElementById('fullscreen-prompt').classList.remove('show');
+    });
+    document.addEventListener('fullscreenchange', () => {
+      document.getElementById('fullscreen-prompt').classList.toggle('show', !document.fullscreenElement);
+    });
+    window.addEventListener('load', initializeFullscreen, { once: true });
+
+    const escapeHtml = value => String(value ?? '').replace(/[&<>'"]/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[char]));
+
+    function getVenueCategory(program) {
+      const raw = `${program.venueTypeName || ''} ${program.venueType || ''} ${program.section || ''}`.toLowerCase();
+      return raw.includes('sport') ? 'sports' : 'arts';
+    }
+
+    function isPublished(program) {
+      return program.isPublished === true || program.resultsPublished === true || String(program.status || '').toLowerCase() === 'published';
+    }
+
+    function getResultPosition(result) {
+      const values = [result.position, result.rank, result.positionNumber, result.positionLabel, result.positionName];
+      for (const value of values) {
+        const match = String(value ?? '').match(/\d+/);
+        if (match) {
+          const position = parseInt(match[0], 10);
+          if (position > 0 && position <= 50) return position;
+        }
+      }
+      const positionPoints = parseInt(result.positionPoints, 10);
+      if (positionPoints === 3) return 1;
+      if (positionPoints === 2) return 2;
+      if (positionPoints === 1) return 3;
+      return 99;
+    }
+
+    function isReel(media) {
+      const type = String(media.type || '').toLowerCase();
+      return type === 'video' || type === 'reel' || type.startsWith('video/');
+    }
+
+    window.fitGalleryMedia = function (element, shouldRotate) {
+      if (!element || !shouldRotate || !element.parentElement) return;
+      const stage = element.parentElement;
+      const sourceWidth = element.videoWidth || element.naturalWidth;
+      const sourceHeight = element.videoHeight || element.naturalHeight;
+      if (!sourceWidth || !sourceHeight) return;
+      const scale = Math.min(stage.clientWidth / sourceHeight, stage.clientHeight / sourceWidth);
+      element.style.width = `${Math.floor(sourceWidth * scale)}px`;
+      element.style.height = `${Math.floor(sourceHeight * scale)}px`;
+    };
+
+    window.prepareGalleryVideo = function (element, shouldRotate) {
+      if (!element) return;
+      if (shouldRotate) window.fitGalleryMedia(element, true);
+      element.muted = false;
+      element.volume = 1;
+      const playback = element.play();
+      if (playback && typeof playback.catch === 'function') {
+        playback.catch(() => {
+          // Autoplay with audio can be blocked until the viewer taps Play.
+          element.controls = true;
+        });
+      }
+    };
+
+    function updateSecondaryOptions() {
+      const mode = document.getElementById('screen-mode-select').value;
+      const select = document.getElementById('category-select');
+      if (mode === 'gallery') {
+        select.innerHTML = '<option value="image">IMAGE</option><option value="reel">REEL</option><option value="auto">AUTO</option>';
+      } else {
+        select.innerHTML = '<option value="arts">ARTS</option><option value="sports">SPORTS</option>';
+      }
+    }
+
+    function renderGalleryScreen() {
+      const filter = document.getElementById('category-select').value;
+      visiblePrograms = allGalleryMedia.filter(media => {
+        if (!media.url) return false;
+        if (filter === 'reel') return isReel(media);
+        if (filter === 'image') return !isReel(media) && !String(media.type || '').toLowerCase().startsWith('audio');
+        return !String(media.type || '').toLowerCase().startsWith('audio');
+      });
+      activeResultIndex = Math.min(activeResultIndex, Math.max(visiblePrograms.length - 1, 0));
+      document.getElementById('results-declared').textContent = visiblePrograms.length;
+      document.getElementById('results-total').textContent = allGalleryMedia.length;
+      document.getElementById('stats-label').textContent = 'gallery media';
+      document.getElementById('results-progress').style.width = allGalleryMedia.length ? `${(visiblePrograms.length / allGalleryMedia.length) * 100}%` : '0%';
+      renderFeaturedGalleryItem();
+      restartRotation();
+    }
+
+    function renderFeaturedGalleryItem() {
+      const container = document.getElementById('main-results-card');
+      const list = document.getElementById('recent-results');
+      if (!visiblePrograms.length) {
+        container.innerHTML = `<div class="m-auto text-center px-6 text-[#37314F]"><div class="empty-orb"><span class="iconify" data-icon="solar:gallery-wide-bold-duotone"></span></div><h2 class="text-2xl font-extrabold mt-5">No gallery media</h2><p class="text-sm text-slate-400 mt-2">Uploaded images and reels will appear here.</p></div>`;
+        list.innerHTML = '<div class="py-10 text-center text-slate-400 text-xs">No media available</div>';
+        return;
+      }
+      const media = visiblePrograms[activeResultIndex];
+      const reel = isReel(media);
+      const rotated = reel && media.orientation === 'landscape';
+      const mediaElement = reel
+        ? `<video src="${escapeHtml(media.url)}" class="gallery-media-backdrop" autoplay muted loop playsinline aria-hidden="true"></video><video src="${escapeHtml(media.url)}" class="gallery-feature-media ${rotated ? 'gallery-feature-media--rotated' : ''}" autoplay loop controls playsinline onloadedmetadata="prepareGalleryVideo(this, ${rotated})"></video>`
+        : `<img src="${escapeHtml(media.url)}" class="gallery-media-backdrop" alt="" aria-hidden="true"><img src="${escapeHtml(media.url)}" alt="${escapeHtml(media.name || 'Gallery image')}" class="gallery-feature-media">`;
+      container.innerHTML = `<div class="gallery-feature"><div class="gallery-media-stage">${mediaElement}<div class="gallery-feature-shade"></div><span class="gallery-type-badge"><span class="iconify" data-icon="${reel ? 'solar:videocamera-record-bold' : 'solar:gallery-bold'}"></span>${reel ? 'Reel' : 'Image'}</span></div><div class="gallery-feature-caption"><span>${escapeHtml(media.albumName || 'Festival gallery')}</span><h2>${escapeHtml(media.name || (reel ? 'Festival Reel' : 'Festival Moment'))}</h2><p>Live from the festival media gallery</p></div></div>`;
+      list.innerHTML = visiblePrograms.map((item, index) => `<button class="recent-item ${index === activeResultIndex ? 'active' : ''} w-full p-2.5 text-left flex items-center gap-3" onclick="showGalleryItem(${index})"><span class="gallery-thumb">${isReel(item) ? `<video src="${escapeHtml(item.url)}" muted preload="metadata"></video><i class="iconify" data-icon="solar:play-bold"></i>` : `<img src="${escapeHtml(item.url)}" alt="">`}</span><span class="min-w-0"><strong class="block text-xs text-[#37314F] truncate">${escapeHtml(item.name || (isReel(item) ? 'Festival Reel' : 'Festival Image'))}</strong><small class="block text-[10px] text-slate-400 mt-1 truncate">${escapeHtml(item.albumName || 'Gallery')}</small></span></button>`).join('');
+    }
+
+    window.showGalleryItem = function (index) { activeResultIndex = index; renderFeaturedGalleryItem(); restartRotation(); };
+
+    function renderFeaturedResult() {
+      const container = document.getElementById('main-results-card');
+      if (!visiblePrograms.length) {
+        container.innerHTML = `<div class="m-auto text-center px-6 text-[#37314F]"><div class="empty-orb"><span class="iconify" data-icon="solar:cup-star-bold-duotone"></span></div><h2 class="text-2xl font-extrabold mt-5">No published results</h2><p class="text-sm text-slate-400 mt-2">New results will appear here automatically.</p></div>`;
+        return;
+      }
+
+      activeResultIndex = Math.min(activeResultIndex, visiblePrograms.length - 1);
+      const program = visiblePrograms[activeResultIndex];
+      const winners = Array.isArray(program.winners) ? [...program.winners].sort((a, b) => Number(a.position || 99) - Number(b.position || 99)).slice(0, 3) : [];
+      const winnerCards = winners.length ? winners.map((winner, index) => {
+        const storedPosition = Number(winner.position);
+        const position = storedPosition >= 1 && storedPosition <= 3 ? storedPosition : index + 1;
+        const suffix = position === 1 ? 'st' : position === 2 ? 'nd' : position === 3 ? 'rd' : 'th';
+        const winnerName = winner.candidateName || winner.name || 'Winner';
+        const initials = String(winnerName).split(/\s+/).filter(Boolean).slice(0, 2).map(part => part[0]).join('').toUpperCase();
+        return `<article class="winner-card rank-${Math.min(position, 3)} p-4 flex items-center gap-3"><span class="winner-position">0${position}</span><span class="winner-avatar">${escapeHtml(initials)}</span><div class="min-w-0 relative z-10"><span class="text-[9px] font-black uppercase tracking-[.12em] text-[#C0912B]">${position}${suffix} place</span><h3 class="font-extrabold text-[#37314F] text-sm truncate mt-0.5">${escapeHtml(winnerName)}</h3><p class="text-[11px] text-slate-400 truncate mt-0.5">${escapeHtml(winner.team || 'Team not assigned')}</p></div><span class="points-pill ml-auto relative z-10">${Number(winner.points || 0)} pts</span></article>`;
+      }).join('') : `<div class="winner-card p-6 text-center text-slate-500 col-span-full">Winner details will be available shortly.</div>`;
+
+      container.innerHTML = `<div class="relative z-10 w-full p-7 md:p-10 flex flex-col"><div class="flex items-start justify-between gap-5"><div class="flex items-center gap-3"><span class="result-kicker">Official result &bull; ${escapeHtml(getVenueCategory(program))}</span><span class="px-2.5 py-1 rounded-full bg-[#f0eef4] text-[#37314F] text-[10px] font-black">${escapeHtml(program.code || 'PROGRAM')}</span></div><span class="hidden sm:inline text-[10px] text-slate-400 font-bold tracking-widest uppercase">Live declaration</span></div><div class="featured-layout flex-1 py-8"><div><div class="inline-flex items-center gap-2 text-[#C0912B] text-xs font-extrabold uppercase tracking-[.12em] mb-5"><span class="w-8 h-8 rounded-xl bg-[#fbf3e2] grid place-items-center"><span class="iconify" data-icon="solar:bookmark-bold-duotone"></span></span>${escapeHtml(program.section || program.category || 'General')}</div><h2 class="program-title font-black text-[#37314F]">${escapeHtml(program.name || program.programName || 'Program Result')}</h2><p class="text-slate-400 text-sm mt-5 max-w-lg leading-relaxed">Official results are now declared. Congratulations to every participant and winning team.</p></div><div><div class="podium-label mb-4"><span class="iconify text-base" data-icon="solar:cup-star-bold-duotone"></span> Winners podium</div><div class="podium-list">${winnerCards}</div></div></div><div class="flex items-center justify-between pt-5 border-t border-slate-100"><span class="text-[10px] text-slate-400 font-semibold">Verified festival result</span><div class="flex gap-1.5"><span class="w-5 h-1 rounded-full bg-[#C0912B]"></span><span class="w-5 h-1 rounded-full bg-[#92205D]"></span><span class="w-5 h-1 rounded-full bg-[#17635F]"></span></div></div></div>`;
+      renderRecentResults();
+    }
+
+    function renderRecentResults() {
+      const list = document.getElementById('recent-results');
+      if (!visiblePrograms.length) {
+        list.innerHTML = `<div class="py-10 text-center text-slate-400 text-xs">No declared results yet</div>`;
+        return;
+      }
+      list.innerHTML = visiblePrograms.map((program, index) => `<button class="recent-item ${index === activeResultIndex ? 'active' : ''} w-full p-3 text-left flex items-center gap-3" onclick="showResult(${index})"><span class="w-9 h-9 rounded-xl grid place-items-center shrink-0 ${getVenueCategory(program) === 'sports' ? 'bg-[#e7f1f0] text-[#17635F]' : 'bg-[#f4edf1] text-[#92205D]'}"><span class="iconify" data-icon="${getVenueCategory(program) === 'sports' ? 'solar:running-2-bold-duotone' : 'solar:medal-ribbons-star-bold-duotone'}"></span></span><span class="min-w-0"><strong class="block text-xs text-[#37314F] truncate">${escapeHtml(program.name || program.programName || 'Program')}</strong><small class="block text-[10px] text-slate-400 mt-1 truncate">${escapeHtml(program.code || '')} &bull; ${escapeHtml(program.section || getVenueCategory(program))}</small></span><span class="iconify text-[#C0912B] ml-auto shrink-0" data-icon="solar:alt-arrow-right-linear"></span></button>`).join('');
+    }
+
+    window.showResult = function (index) { activeResultIndex = index; renderFeaturedResult(); restartRotation(); };
+
+    function restartRotation() {
+      clearInterval(rotationTimer);
+      const mode = document.getElementById('screen-mode-select').value;
+      const galleryAuto = mode === 'gallery' && document.getElementById('category-select').value === 'auto';
+      if (galleryAuto && visiblePrograms.length > 1) {
+        rotationTimer = setInterval(() => {
+          activeResultIndex = (activeResultIndex + 1) % visiblePrograms.length;
+          if (mode === 'gallery') renderFeaturedGalleryItem();
+          else renderFeaturedResult();
+        }, 8000);
+      }
+    }
+
+    function processData() {
+      if (!allPrograms) return;
+
+      // Merge the separate result documents into their program before the UI renders.
+      allPrograms.forEach(program => {
+        const matchingResults = allResults.filter(result => result.programId === program.id || (result.programCode && result.programCode === program.code));
+        if (matchingResults.length) {
+          program.winners = matchingResults.map(result => ({
+            position: getResultPosition(result),
+            candidateName: result.candidateName || result.name || 'Candidate',
+            team: result.team || result.teamName || 'Unassigned team',
+            points: Number(result.totalPoints || result.points || 0)
+          }));
+        }
+      });
+
+      let total = allPrograms.length;
+      const publishedPrograms = allPrograms.filter(isPublished);
+      let declared = publishedPrograms.length;
+      const selectedCategory = document.getElementById('category-select').value;
+      visiblePrograms = publishedPrograms.filter(program => getVenueCategory(program) === selectedCategory).reverse();
+
+      // Update DOM
+      document.getElementById('results-total').textContent = total;
+      document.getElementById('results-declared').textContent = declared;
+      document.getElementById('stats-label').textContent = 'published results';
+      document.getElementById('results-progress').style.width = `${total ? Math.min(100, (declared / total) * 100) : 0}%`;
+      activeResultIndex = 0;
+      renderFeaturedResult();
+      restartRotation();
+    }
+
+    document.getElementById('category-select').addEventListener('change', () => {
+      const mode = document.getElementById('screen-mode-select').value;
+      if (mode === 'gallery') renderGalleryScreen();
+      else processData();
+    });
+    document.getElementById('screen-mode-select').addEventListener('change', () => {
+      updateSecondaryOptions();
+      activeResultIndex = 0;
+      const mode = document.getElementById('screen-mode-select').value;
+      if (mode === 'gallery') renderGalleryScreen();
+      else processData();
+    });
+
+    if (db) {
+      db.collection('programResults').onSnapshot(snap => {
+        allResults = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        if (document.getElementById('screen-mode-select').value !== 'gallery') processData();
+      });
+      db.collection('programs').onSnapshot(snap => {
+        allPrograms = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        if (document.getElementById('screen-mode-select').value !== 'gallery') processData();
+      });
+
+      db.collection('mediaGallery').orderBy('createdAt', 'desc').onSnapshot(snap => {
+        allGalleryMedia = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        if (document.getElementById('screen-mode-select').value === 'gallery') renderGalleryScreen();
+      }, error => console.warn('Gallery media:', error));
+
+        db.collection('config').doc('liveScreenController').onSnapshot(doc => {
+        if (!doc.exists) return;
+        const state = doc.data() || {};
+        if (!['result', 'gallery'].includes(state.mode)) return;
+        const modeSelect = document.getElementById('screen-mode-select');
+        modeSelect.value = state.mode;
+        updateSecondaryOptions();
+        const categorySelect = document.getElementById('category-select');
+        if ([...categorySelect.options].some(option => option.value === state.submode)) {
+          categorySelect.value = state.submode;
+        }
+        activeResultIndex = 0;
+        if (state.mode === 'gallery') renderGalleryScreen();
+        else processData();
+        }, error => console.warn('Screen controller:', error));
+
+        db.collection('config').doc('festData').onSnapshot(doc => {
+            if (!doc.exists) return;
+            const fest = doc.data() || {};
+            const name = fest.name || 'Festival';
+            const logo = fest.logo || fest.logo512 || fest.logo502 || fest.logo192;
+            document.getElementById('festival-name').textContent = name;
+            if (logo) {
+              document.getElementById('festival-logo').src = logo;
+              const favicon = document.getElementById('festival-favicon');
+              if (favicon) favicon.href = logo;
+            }
+            document.title = `Screen — ${name}`;
+        }, error => console.warn('Festival branding:', error));
+    }
+
+  </script>
+</body>
+
+</html>

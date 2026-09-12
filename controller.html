@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#37314F">
+  <title>Screen Controller</title>
+  <script src="https://code.iconify.design/3/3.1.0/iconify.min.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+  <style>
+    :root{--ink:#37314F;--gold:#C0912B;--teal:#17635F;--pink:#92205D;--bg:#f6f4f8}*{box-sizing:border-box}body{margin:0;min-height:100vh;padding:max(20px,env(safe-area-inset-top)) 16px max(24px,env(safe-area-inset-bottom));background:radial-gradient(circle at 100% 0,rgba(146,32,93,.1),transparent 30%),var(--bg);color:var(--ink);font-family:'Cobe','Inter',system-ui,sans-serif}.app{max-width:480px;margin:auto}.desktop-block{max-width:420px;margin:18vh auto 0;padding:32px 24px;text-align:center;background:#fff;border:1px solid #e6e2e9;border-radius:22px;box-shadow:0 12px 35px rgba(55,49,79,.08)}.desktop-block .iconify{font-size:42px;color:var(--pink)}.desktop-block h1{margin:14px 0 8px;font-size:22px}.desktop-block p{margin:0;color:#817a88;font-size:14px;line-height:1.6}.head{display:flex;align-items:center;justify-content:space-between;margin-bottom:22px}.brand{display:flex;align-items:center;gap:11px}.logo{width:44px;height:44px;display:grid;place-items:center;border-radius:14px;background:var(--ink);color:var(--gold);font-size:21px}h1{margin:0;font-size:18px;font-weight:900}.hint{margin:3px 0 0;color:#918b98;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em}.status{display:flex;align-items:center;gap:6px;padding:7px 10px;border:1px solid #e3dfe6;border-radius:99px;background:#fff;color:#8e8795;font-size:10px;font-weight:800}.dot{width:7px;height:7px;border-radius:50%;background:#aaa4ae}.online .dot{background:var(--teal);box-shadow:0 0 0 4px rgba(23,99,95,.1)}.card{padding:18px;margin-bottom:14px;background:#fff;border:1px solid #e6e2e9;border-radius:22px;box-shadow:0 12px 35px rgba(55,49,79,.06)}.label{display:flex;align-items:center;gap:7px;margin-bottom:13px;color:#8e8795;font-size:10px;font-weight:900;letter-spacing:.12em;text-transform:uppercase}.modes{display:grid;grid-template-columns:repeat(2,1fr);gap:9px}.mode,.sub{border:1px solid #e4e0e7;background:#faf9fb;color:#777180;cursor:pointer;font:inherit;font-weight:850}.mode{min-height:82px;padding:11px 6px;border-radius:16px;font-size:11px}.mode .iconify{display:block;margin:0 auto 8px;font-size:23px}.mode.active{color:#fff;background:var(--ink);border-color:var(--ink);transform:translateY(-2px);box-shadow:0 9px 20px rgba(55,49,79,.18)}.mode.active .iconify{color:var(--gold)}.subs{display:grid;grid-template-columns:repeat(2,1fr);gap:9px}.subs.gallery{grid-template-columns:repeat(3,1fr)}.sub{min-height:48px;border-radius:14px;background:#fff;color:var(--ink);font-size:11px}.sub.active{color:var(--pink);background:#f8eef3;border-color:rgba(146,32,93,.35)}.preview{padding:18px;margin-bottom:14px;border-radius:20px;color:#fff;background:linear-gradient(135deg,var(--ink),#4b3049)}.preview small{display:block;color:#d9bf7d;font-size:9px;font-weight:900;letter-spacing:.12em;text-transform:uppercase}.preview strong{display:block;margin-top:7px;font-size:20px}.apply{width:100%;height:55px;border:0;border-radius:17px;background:var(--pink);color:#fff;font:inherit;font-size:12px;font-weight:900;cursor:pointer;box-shadow:0 12px 28px rgba(146,32,93,.2)}.apply:disabled{opacity:.6}.message{min-height:18px;margin:11px 0 0;text-align:center;color:#817a88;font-size:10px;font-weight:700}
+  </style>
+</head>
+<body>
+  <section id="desktop-block" class="desktop-block" hidden>
+    <span class="iconify" data-icon="solar:smartphone-bold-duotone"></span>
+    <h1>Mobile access only</h1>
+    <p>Open this controller on a mobile phone to manage the live screen.</p>
+  </section>
+  <main id="controller" class="app" hidden>
+    <header class="head"><div class="brand"><div class="logo"><span class="iconify" data-icon="solar:remote-controller-2-bold-duotone"></span></div><div><h1>Screen Controller</h1><p class="hint">Live display remote</p></div></div><div id="status" class="status"><span class="dot"></span><span>Connecting</span></div></header>
+    <section class="card"><div class="label"><span class="iconify" data-icon="solar:monitor-smartphone-bold-duotone"></span>Display mode</div><div class="modes"><button class="mode active" data-mode="result"><span class="iconify" data-icon="solar:cup-star-bold-duotone"></span>Result</button><button class="mode" data-mode="gallery"><span class="iconify" data-icon="solar:gallery-wide-bold-duotone"></span>Gallery</button></div></section>
+    <section class="card"><div id="sub-label" class="label">Result category</div><div id="subs" class="subs"></div></section>
+    <div class="preview"><small>Screen will display</small><strong id="preview">Auto &bull; Arts</strong></div>
+    <button id="apply" class="apply">Apply to live screen</button><p id="message" class="message">Choose a mode and apply it.</p>
+  </main>
+  <script>
+    const isMobileDevice=navigator.userAgentData?.mobile??/Android|iPhone|iPod|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    document.getElementById(isMobileDevice?'controller':'desktop-block').hidden=false;
+    if(isMobileDevice){
+    const config={authDomain:'festie-s1u2h3.firebaseapp.com',projectId:'festie-s1u2h3',storageBucket:'festie-s1u2h3.firebasestorage.app',messagingSenderId:'1055535560935',appId:'1:1055535560935:web:5317ad5fe9ba3ffcfebff7'};
+    if(!firebase.apps.length)firebase.initializeApp(config);const db=firebase.firestore();const ref=db.collection('config').doc('liveScreenController');
+    let mode='result',submode='arts';
+    const choices={result:[['arts','Arts'],['sports','Sports']],gallery:[['image','Image'],['reel','Reel'],['auto','Auto']]};
+    function render(){document.querySelectorAll('.mode').forEach(b=>b.classList.toggle('active',b.dataset.mode===mode));const items=choices[mode];if(!items.some(x=>x[0]===submode))submode=items[0][0];const box=document.getElementById('subs');box.classList.toggle('gallery',mode==='gallery');document.getElementById('sub-label').textContent=mode==='gallery'?'Gallery content':'Result category';box.innerHTML=items.map(x=>`<button class="sub ${x[0]===submode?'active':''}" data-value="${x[0]}">${x[1]}</button>`).join('');box.querySelectorAll('.sub').forEach(b=>b.onclick=()=>{submode=b.dataset.value;render()});document.getElementById('preview').innerHTML=`${mode[0].toUpperCase()+mode.slice(1)} &bull; ${submode[0].toUpperCase()+submode.slice(1)}`}
+    document.querySelectorAll('.mode').forEach(b=>b.onclick=()=>{mode=b.dataset.mode;render()});
+    document.getElementById('apply').onclick=async()=>{const b=document.getElementById('apply');b.disabled=true;document.getElementById('message').textContent='Updating live screen...';try{await ref.set({mode,submode,updatedAt:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});document.getElementById('message').textContent='Live screen updated successfully.'}catch(e){console.error(e);document.getElementById('message').textContent='Update failed. Check your connection.'}finally{b.disabled=false}};
+    ref.onSnapshot(doc=>{const s=document.getElementById('status');s.classList.add('online');s.lastElementChild.textContent='Connected';if(doc.exists){const data=doc.data();if(choices[data.mode])mode=data.mode;if(data.submode)submode=data.submode;render()}},()=>{document.getElementById('status').lastElementChild.textContent='Offline'});render();
+    }
+  </script>
+</body>
+</html>
