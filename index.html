@@ -920,6 +920,22 @@
       return shuffled;
     }
 
+    function shuffleGalleryMedia(mediaItems) {
+      const images = shufflePrograms(mediaItems.filter(media => !isReel(media)));
+      const reels = shufflePrograms(mediaItems.filter(isReel));
+      const mixed = [];
+      let nextType = Math.random() < 0.5 ? 'image' : 'reel';
+
+      while (images.length || reels.length) {
+        const preferred = nextType === 'image' ? images : reels;
+        const fallback = nextType === 'image' ? reels : images;
+        mixed.push((preferred.length ? preferred : fallback).shift());
+        nextType = nextType === 'image' ? 'reel' : 'image';
+      }
+
+      return mixed;
+    }
+
     function isPublished(program) {
       return program.isPublished === true || program.resultsPublished === true || String(program.status || '').toLowerCase() === 'published';
     }
@@ -984,12 +1000,13 @@
       document.querySelector('.screen-grid').classList.remove('result-mode');
       document.querySelector('.screen-grid').classList.add('gallery-mode');
       const filter = document.getElementById('category-select').value;
-      visiblePrograms = allGalleryMedia.filter(media => {
+      const filteredMedia = allGalleryMedia.filter(media => {
         if (!media.url) return false;
         if (filter === 'reel') return isReel(media);
         if (filter === 'image') return !isReel(media) && !String(media.type || '').toLowerCase().startsWith('audio');
         return !String(media.type || '').toLowerCase().startsWith('audio');
       });
+      visiblePrograms = filter === 'auto' ? shuffleGalleryMedia(filteredMedia) : filteredMedia;
       activeResultIndex = Math.min(activeResultIndex, Math.max(visiblePrograms.length - 1, 0));
       document.getElementById('results-declared').textContent = visiblePrograms.length;
       document.getElementById('results-total').textContent = allGalleryMedia.length;
